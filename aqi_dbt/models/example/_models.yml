@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: air_quality_data  # ชื่อของโมเดล
+    description: "This model contains air quality data including AQI (Air Quality Index) for Bangkok, Thailand"  # คำอธิบายของโมเดล
+    columns:
+      - name: id  # ชื่อของคอลัมน์
+        description: "Unique identifier for each record"  # คำอธิบายของคอลัมน์
+        tests:
+          - not_null  # ทดสอบว่าคอลัมน์นี้ไม่ควรเป็นค่า null
+          - unique    # ทดสอบว่าแต่ละค่าในคอลัมน์ต้องไม่ซ้ำกัน
+      - name: city  # ชื่อของคอลัมน์
+        description: "City name where the air quality data was recorded"  # คำอธิบายของคอลัมน์
+        tests:
+          - not_null  # ทดสอบว่าคอลัมน์นี้ไม่ควรเป็นค่า null
+      - name: state  # ชื่อของคอลัมน์
+        description: "State name where the air quality data was recorded"  # คำอธิบายของคอลัมน์
+        tests:
+          - not_null  # ทดสอบว่าคอลัมน์นี้ไม่ควรเป็นค่า null
+      - name: country  # ชื่อของคอลัมน์
+        description: "Country name where the air quality data was recorded"  # คำอธิบายของคอลัมน์
+        tests:
+          - not_null  # ทดสอบว่าคอลัมน์นี้ไม่ควรเป็นค่า null
+      - name: aqi  # ชื่อของคอลัมน์
+        description: "Air Quality Index (AQI) value that represents air pollution level"  # คำอธิบายของคอลัมน์
+        tests:
+          - not_null  # ทดสอบว่าคอลัมน์นี้ไม่ควรเป็นค่า null
+          - in_range:
+              min: 0  # ค่าต่ำสุดที่เป็นไปได้
+              max: 500  # ค่าสูงสุดที่เป็นไปได้
+      - name: timestamp  # ชื่อของคอลัมน์
+        description: "Timestamp when the air quality data was recorded"  # คำอธิบายของคอลัมน์
+        tests:
+          - not_null  # ทดสอบว่าคอลัมน์นี้ไม่ควรเป็นค่า null
+          - unique    # ทดสอบว่าแต่ละค่าในคอลัมน์ต้องไม่ซ้ำกัน
+
+
+  - name: highest_aqi_day_of_week  # Fixed the model name (removed extra period)
+    description: "This model identifies the day of the week that generally has the highest average AQI (Air Quality Index)."
+
+  - name: AQI_exceed_safe_limits_weekly  # ชื่อของโมเดล
+    description: "This model creates a calculation of the statistics for the number of days where the AQI value exceeds the safe threshold (AQI > 100)."
+
+  - name: lowest_AQI_weekly  # ชื่อของโมเดล
+    description: "This model extracts the specific day of the week with the lowest AQI from the last 7 days."
+
+  - name: weekly_aqi  # ชื่อของโมเดล
+    description: "This model calculates the average AQI (Air Quality Index) for each day of the week (Sunday to Saturday)."
+
+  - name: yesterday_the_best_AQI  # ชื่อของโมเดล
+    description: "This model identifies the best (lowest) AQI value from yesterday's data."

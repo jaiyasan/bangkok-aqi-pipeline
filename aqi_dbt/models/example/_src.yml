@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: air_quality_source  # ชื่อของแหล่งข้อมูล
+    description: "Air quality data source"
+    database: postgres  # ชื่อฐานข้อมูล
+    schema: public  # ชื่อ schema ที่ใช้ในฐานข้อมูล
+    tables:
+      - name: air_quality_data  # ชื่อตารางในฐานข้อมูล
+        description: "Table containing air quality data"

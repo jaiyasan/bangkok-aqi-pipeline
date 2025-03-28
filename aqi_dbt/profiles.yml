@@ -1,0 +1,12 @@
+aqi_dbt:
+  outputs:
+    dev:
+      type: postgres
+      host: localhost 
+      user: postgres
+      password: postgres
+      dbname: postgres
+      schema: dpt_thikamporn
+      threads: 1
+      port: 5432
+  target: dev
