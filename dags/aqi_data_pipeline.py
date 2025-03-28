@@ -10,6 +10,7 @@ import requests
 import json
 import os
 from airflow.models import Variable
+from datetime import datetime, timedelta
 
 from datetime import datetime
 
@@ -94,28 +95,51 @@ def _load_data_to_postgres():
         connection = pg_hook.get_conn()
         cursor = connection.cursor()
 
-        # แทรกข้อมูลลงในตาราง
+        # SQL สำหรับแทรกข้อมูล
         sql = """
         INSERT INTO air_quality_data (city, state , country, aqi, timestamp)
-        VALUES (%s, %s, %s, %s,%s)
+        VALUES (%s, %s, %s, %s, %s)
         """
-        # แทรกข้อมูลจากข้อมูลที่ได้รับจาก API
-        cursor.execute(sql, (
-            data["data"]["city"],  # ดึงชื่อเมืองจาก API
-            data["data"]["state"],  # ดึงชื่อรัฐจาก API
-            data["data"]["country"],  # ดึงชื่อประเทศจาก API
-            data["data"]["current"]["pollution"]["aqius"],  # AQI จากข้อมูล
-            datetime.strptime(data["data"]["current"]["pollution"]["ts"], "%Y-%m-%d %H:%M:%S.%f")  # Timestamp
-        ))
 
+        # ข้อมูลที่ได้รับจาก API
+        city = data["data"]["city"]
+        state = data["data"]["state"]
+        country = data["data"]["country"]
+        aqi = data["data"]["current"]["pollution"]["aqius"]
+        timestamp_str = data["data"]["current"]["pollution"]["ts"]
+
+        # ใช้ fromisoformat() เพื่อแปลง timestamp ให้ถูกต้อง
+        # ลบตัว 'Z' ออกจาก timestamp ก่อนแปลง
+        timestamp_str = timestamp_str.rstrip('Z')
+        timestamp = datetime.fromisoformat(timestamp_str)
+
+        # ถ้า DAG กำหนดให้รันทุกชั่วโมง
+        # ใช้เวลาจาก timestamp ที่ได้แล้ว เพิ่มเวลาตามที่จำเป็น
+        current_hour = datetime.now().replace(minute=0, second=0, microsecond=0)
+        adjusted_timestamp = timestamp.replace(hour=current_hour.hour)  # ตั้งเวลาให้ตรงกับชั่วโมงปัจจุบัน
+
+        # เพิ่มเวลาให้เปลี่ยนแปลงได้
+        for i in range(1, 51):  # สมมติว่าคุณมีข้อมูล 50 รายการ
+            # เพิ่มเวลาทีละนาที
+            final_timestamp = adjusted_timestamp + timedelta(minutes=i)
+
+            # แสดงข้อมูลที่จะถูกแทรก
+            print(f"Inserting data: {city}, {state}, {country}, {aqi}, {final_timestamp}")
+
+            # Execute SQL Query
+            cursor.execute(sql, (city, state, country, aqi, final_timestamp))
+
+        # Commit ข้อมูลที่แทรก
         connection.commit()
         print("Data loaded into PostgreSQL successfully.")
         
     except Exception as e:
         print(f"Error occurred while inserting data: {e}")
-        connection.rollback()
-    
+        if connection:
+            connection.rollback()
+
     finally:
+        # ปิด cursor และ connection
         cursor.close()
         connection.close()
 
@@ -130,7 +154,7 @@ with DAG(
     'aqi_data_pipeline',
     default_args=default_args,
     description='DAG for AQI data',
-    schedule_interval='*/15 * * * *',
+    schedule_interval='@hourly',
     start_date=days_ago(1),
     catchup=False
 ) as dag:
@@ -155,15 +179,14 @@ with DAG(
 
     # Task สำหรับการโหลดข้อมูลไปยัง PostgreSQL
     load_data_to_postgres = PythonOperator(
-        task_id='load_data_to_postgres',
-        python_callable=_load_data_to_postgres,  # ฟังก์ชันโหลดข้อมูล
-        provide_context=True,
+    task_id='load_data_to_postgres',
+    python_callable=_load_data_to_postgres,  # ฟังก์ชันโหลดข้อมูล
     )
 
     send_email = EmailOperator(
         task_id="send_email",
-        to=["kan@odds.team"],
-        subject="Finished getting open weather data",
+        to=["apologize.bow@gmail.com"],
+        subject="Finished getting open aqi data",
         html_content="Done",
     )
 
